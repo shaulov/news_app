@@ -3,7 +3,7 @@ function customHttp() {
     return {
         get(url, cb) {
             try {
-                const xht = new XMLHttpRequest();
+                const xhr = new XMLHttpRequest();
                 xhr.open('GET', url);
                 xhr.addEventListener('load', () => {
                     if (Math.floor(xhr.status / 100) !== 2) {
@@ -56,8 +56,70 @@ function customHttp() {
 // Init HTTP Module
 const http = customHttp();
 
-//Init Selects
+const newsService = (function () {
+    const apiKey = '2a13ce5cc77f4213bb93c8ab791b973b';
+    const apiUrl = 'https://news-api-v2.herokuapp.com';
 
+    return {
+        topHeadlines(country = 'ru', cb) {
+            http.get(`${apiUrl}/top-headlines?country=${country}&category=technology&apiKey=${apiKey}`, cb);
+        },
+        everything(query, cb) {
+            http.get(`${apiUrl}/top-headlines?q=${query}&apiKey=${apiKey}`, cb);
+        },
+    };
+}());
+
+//Init Selects
 document.addEventListener('DOMContentLoaded', function () {
     M.AutoInit();
+    loadNews();
 });
+
+// Load News Function
+function loadNews() {
+    newsService.topHeadlines('ru', onGetResponse);
+}
+
+// Function On Get Response From Server
+function onGetResponse(err, res) {
+    renderNews(res.articles);
+}
+
+// Function Render News
+function renderNews(news) {
+    const newsContainer = document.querySelector('.news-container .row');
+    let fragment = '';
+
+    news.forEach(newsItem => {
+        const el = newsTemplate(newsItem);
+        fragment += el;
+    });
+
+    newsContainer.insertAdjacentHTML('afterbegin', fragment);
+}
+
+// Function News Item Template
+function newsTemplate({
+    urlToImage,
+    title,
+    url,
+    description
+}) {
+    return `
+        <div class="col s12">
+            <div class="card">
+                <div class="card-image">
+                    <img src="${urlToImage}">
+                    <span class="card-title">${title || ''}</span>
+                </div>
+                <div class="card-content">
+                    <p>${description || ''}</p>
+                </div>
+                <div class="card-action">
+                    <a href="${url}">Read More</a>
+                </div>
+            </div>
+        </div>
+    `;
+}
