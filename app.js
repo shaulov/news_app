@@ -62,13 +62,24 @@ const newsService = (function () {
 
     return {
         topHeadlines(country = 'ru', cb) {
-            http.get(`${apiUrl}/top-headlines?country=${country}&category=technology&apiKey=${apiKey}`, cb);
+            http.get(`${apiUrl}/top-headlines?country=${country}&apiKey=${apiKey}`, cb);
         },
         everything(query, cb) {
-            http.get(`${apiUrl}/top-headlines?q=${query}&apiKey=${apiKey}`, cb);
+            http.get(`${apiUrl}/everything?q=${query}&apiKey=${apiKey}`, cb);
         },
     };
 }());
+
+// Elements
+const form = document.forms['newsControls'];
+const countrySelect = form.elements['country'];
+const searchInput = form.elements['search'];
+
+// Events
+form.addEventListener('submit', e => {
+    e.preventDefault();
+    loadNews();
+});
 
 //Init Selects
 document.addEventListener('DOMContentLoaded', function () {
@@ -78,17 +89,41 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // Load News Function
 function loadNews() {
-    newsService.topHeadlines('ru', onGetResponse);
+    showLoader();
+
+    const country = countrySelect.value;
+    const searchText = searchInput.value;
+
+    if (!searchText) {
+        newsService.topHeadlines(country, onGetResponse);
+    } else {
+        newsService.everything(searchText, onGetResponse);
+    }
 }
 
-// Function On Get Response From Server
+// On Get Response From Server Function
 function onGetResponse(err, res) {
+    removePreloader();
+
+    if (err) {
+        showAlert(err, 'error-msg');
+        return;
+    }
+
+    if (!res.articles.length) {
+        // console.log('There are not articles on this theme');
+        return;
+    }
+
     renderNews(res.articles);
 }
 
-// Function Render News
+// Render News Function
 function renderNews(news) {
     const newsContainer = document.querySelector('.news-container .row');
+    if (newsContainer.children.length) {
+        clearContainer(newsContainer);
+    }
     let fragment = '';
 
     news.forEach(newsItem => {
@@ -99,7 +134,16 @@ function renderNews(news) {
     newsContainer.insertAdjacentHTML('afterbegin', fragment);
 }
 
-// Function News Item Template
+// Clear Container Function
+function clearContainer(container) {
+    let child = container.lastElementChild;
+    while (child) {
+        container.removeChild(child);
+        child = container.lastElementChild;
+    }
+}
+
+// News Item Template Function
 function newsTemplate({
     urlToImage,
     title,
@@ -110,7 +154,7 @@ function newsTemplate({
         <div class="col s12">
             <div class="card">
                 <div class="card-image">
-                    <img src="${urlToImage}">
+                    <img src="${urlToImage || ''}">
                     <span class="card-title">${title || ''}</span>
                 </div>
                 <div class="card-content">
@@ -122,4 +166,29 @@ function newsTemplate({
             </div>
         </div>
     `;
+}
+
+function showAlert(msg, type = 'success') {
+    M.toast({
+        html: msg,
+        classes: type
+    });
+}
+
+// Show Loader Function
+function showLoader() {
+    document.body.insertAdjacentHTML(
+        'afterbegin',
+        `
+        <div class="progress">
+            <div class="indeterminate"></div>
+        </div>`);
+}
+
+// Remove Preloader Function
+function removePreloader() {
+    const loader = document.querySelector('.progress');
+    if (loader) {
+        loader.remove();
+    }
 }
