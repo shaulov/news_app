@@ -16,3 +16,11 @@
     grid-template-columns: 1fr 1fr;
     grid-auto-flow: dense;
 }
+
+.emptiness-msg {
+    font-size: 45px;
+    font-weight: 900;
+    color: rgb(90, 34, 58);
+    border: 8px solid rgb(212, 156, 50);
+    text-align: center;
+}
