@@ -61,24 +61,27 @@ const newsService = (function () {
     const apiUrl = 'https://news-api-v2.herokuapp.com';
 
     return {
-        topHeadlines(country = 'ru', cb) {
-            http.get(`${apiUrl}/top-headlines?country=${country}&apiKey=${apiKey}`, cb);
+        topHeadlines(country = 'ru', category = 'general', cb) {
+            http.get(`${apiUrl}/top-headlines?country=${country}&category=${category}&apiKey=${apiKey}`, cb);
         },
         everything(query, cb) {
             http.get(`${apiUrl}/everything?q=${query}&apiKey=${apiKey}`, cb);
-        },
+        }
     };
 }());
 
 // Elements
 const form = document.forms['newsControls'];
 const countrySelect = form.elements['country'];
+const categorySelect = form.elements['category'];
 const searchInput = form.elements['search'];
+const newsContainer = document.querySelector('.news-container .row');
 
 // Events
 form.addEventListener('submit', e => {
     e.preventDefault();
     loadNews();
+    searchInput.value = '';
 });
 
 //Init Selects
@@ -92,10 +95,11 @@ function loadNews() {
     showLoader();
 
     const country = countrySelect.value;
+    const category = categorySelect.value;
     const searchText = searchInput.value;
 
     if (!searchText) {
-        newsService.topHeadlines(country, onGetResponse);
+        newsService.topHeadlines(country, category, onGetResponse);
     } else {
         newsService.everything(searchText, onGetResponse);
     }
@@ -111,7 +115,13 @@ function onGetResponse(err, res) {
     }
 
     if (!res.articles.length) {
-        // console.log('There are not articles on this theme');
+        clearContainer(newsContainer);
+        newsContainer.insertAdjacentHTML(
+            'afterbegin',
+            `<div class="emptiness-msg">
+                <p>No news on this request</p>
+            </div>`
+        );
         return;
     }
 
@@ -120,7 +130,6 @@ function onGetResponse(err, res) {
 
 // Render News Function
 function renderNews(news) {
-    const newsContainer = document.querySelector('.news-container .row');
     if (newsContainer.children.length) {
         clearContainer(newsContainer);
     }
@@ -150,11 +159,12 @@ function newsTemplate({
     url,
     description
 }) {
+    const placeholder = 'https://muzei-mira.com/templates/museum/images/paint/edvard-munk-krik-.jpg';
     return `
         <div class="col s12">
             <div class="card">
                 <div class="card-image">
-                    <img src="${urlToImage || ''}">
+                    <img src="${urlToImage || placeholder}">
                     <span class="card-title">${title || ''}</span>
                 </div>
                 <div class="card-content">
